@@ -41,11 +41,26 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    private void Start()
+    {
+        LoadGame();
+    }
+
     private void Update()
     {
         ProduceDonutsFromOompaLoompas();
         ProduceIceCream();
         UpdateUI();
+    }
+
+    private void OnApplicationQuit()
+    {
+        SaveGame();
+    }
+
+    private void OnApplicationPause(bool paused)
+    {
+        if (paused) SaveGame();
     }
 
     private void ProduceDonutsFromOompaLoompas()
@@ -122,5 +137,54 @@ public class GameManager : MonoBehaviour
         if (Mathf.FloorToInt(donutCount) < amount) return false;
         donutCount -= amount;
         return true;
+    }
+
+    // ---- Save / Load / Idle Progress ----
+
+    private void SaveGame()
+    {
+        PlayerPrefs.SetFloat("donutCount", donutCount);
+        PlayerPrefs.SetFloat("iceCreamCount", iceCreamCount);
+        PlayerPrefs.SetInt("oompaLoompaCount", oompaLoompaCount);
+        PlayerPrefs.SetInt("oompaLoompaPrice", oompaLoompaPrice);
+        PlayerPrefs.SetFloat("rateMultiplier", rateMultiplier);
+        PlayerPrefs.SetString("lastSaveTime", System.DateTime.UtcNow.ToString("o"));
+        PlayerPrefs.Save();
+    }
+
+    private void LoadGame()
+    {
+        if (!PlayerPrefs.HasKey("lastSaveTime")) return;
+
+        donutCount = PlayerPrefs.GetFloat("donutCount", 0f);
+        iceCreamCount = PlayerPrefs.GetFloat("iceCreamCount", 0f);
+        oompaLoompaCount = PlayerPrefs.GetInt("oompaLoompaCount", 1);
+        oompaLoompaPrice = PlayerPrefs.GetInt("oompaLoompaPrice", 3);
+        rateMultiplier = PlayerPrefs.GetFloat("rateMultiplier", 1f);
+
+        // Idle Progress: one Euler step for time away
+        string lastTime = PlayerPrefs.GetString("lastSaveTime", "");
+        if (System.DateTime.TryParse(lastTime, null,
+            System.Globalization.DateTimeStyles.RoundtripKind, out System.DateTime lastSave))
+        {
+            float secondsAway = (float)(System.DateTime.UtcNow - lastSave).TotalSeconds;
+
+            donutCount += oompaLoompaCount * baseProductionRate * rateMultiplier * secondsAway;
+            iceCreamCount += iceCreamBaseRate * secondsAway;
+        }
+    }
+
+    // ---- Reset ----
+
+    public void ResetGame()
+    {
+        PlayerPrefs.DeleteAll();
+        PlayerPrefs.Save();
+
+        donutCount = 0f;
+        iceCreamCount = 0f;
+        oompaLoompaCount = 1;
+        oompaLoompaPrice = 3;
+        rateMultiplier = 1f;
     }
 }
