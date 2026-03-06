@@ -12,9 +12,18 @@ public class GameManager : MonoBehaviour
     [Header("Coffee Settings")]
     [SerializeField] private TMP_Text coffeeCountText;
     [SerializeField] private TMP_Text coffeeMultiplierText;
-    [SerializeField] private float coffeeBaseRate = 0.1f;
+    [SerializeField] private TMP_Text coffeeProductionText;
+    [SerializeField] private TMP_Text coffeeMultiplierUpgradeCostText;
+    [SerializeField] private TMP_Text coffeeProductionUpgradeCostText;
+    [SerializeField] private float coffeeProductionRate = 0.1f;
     [SerializeField] private float coffeeMultiplierGainPerCoffee = 0.01f;
     private float coffeeCount;
+
+    [Header("Coffee Upgrade Costs")]
+    [SerializeField] private int coffeeMultiplierUpgradeCost = 10;
+    [SerializeField] private float coffeeMultiplierUpgradeCostMultiplier = 2f;
+    [SerializeField] private int coffeeProductionUpgradeCost = 10;
+    [SerializeField] private float coffeeProductionUpgradeCostMultiplier = 2f;
 
     [Header("Coffee Unlock Panel")]
     [SerializeField] private GameObject coffeePanel;
@@ -40,10 +49,14 @@ public class GameManager : MonoBehaviour
     [Header("Power-ups")]
     [SerializeField] private float rateMultiplier = 1f;
     [SerializeField] private float coffeeMultiplier = 1f;
+    [SerializeField] private float coffeeProductionMultiplier = 1f;
 
     private float donutCount;
     private string prestigeStars = "";
     private int defaultPrestigePrice;
+    private float defaultCoffeeProductionRate;
+    private int defaultCoffeeMultiplierUpgradeCost;
+    private int defaultCoffeeProductionUpgradeCost;
 
     public int DonutCountInt => Mathf.FloorToInt(donutCount);
     public int CoffeeCountInt => Mathf.FloorToInt(coffeeCount);
@@ -53,13 +66,16 @@ public class GameManager : MonoBehaviour
     public int PrestigeCount => prestigeStars.Length;
     public int PrestigePrice => prestigePrice;
     public float RateMultiplier => rateMultiplier;
-    public float CoffeeMultiplier => coffeeMultiplier;
+    public float CoffeeProductionMultiplier => coffeeProductionMultiplier;
     public bool CoffeeUnlocked => coffeeUnlocked;
 
     private void Awake()
     {
         defaultPrestigePrice = prestigePrice;
-
+        defaultCoffeeProductionRate = coffeeProductionRate;
+        defaultCoffeeMultiplierUpgradeCost = coffeeMultiplierUpgradeCost;
+        defaultCoffeeProductionUpgradeCost = coffeeProductionUpgradeCost;
+        
         if (oompaLoompaCount <= 0)
         {
             oompaLoompaCount = 1;
@@ -69,11 +85,22 @@ public class GameManager : MonoBehaviour
         {
             prestigePrice = 1;
         }
+
+        if (coffeeMultiplierUpgradeCost <= 0)
+        {
+            coffeeMultiplierUpgradeCost = 1;
+        }
+
+        if (coffeeProductionUpgradeCost <= 0)
+        {
+            coffeeProductionUpgradeCost = 1;
+        }
     }
 
     private void Start()
     {
         LoadGame();
+
         ApplyCoffeePanelStateInstant();
     }
 
@@ -100,20 +127,22 @@ public class GameManager : MonoBehaviour
         if (oompaLoompaCount <= 0) return;
 
         // Euler integration: value += rate * deltaTime
-        float rate = oompaLoompaCount * baseProductionRate * rateMultiplier * coffeeMultiplier;
+        float rate = oompaLoompaCount * baseProductionRate * rateMultiplier * GetCoffeeMultiplierGain();
         donutCount += rate * Time.deltaTime;
+    }
+
+    private float GetCoffeeMultiplierGain()
+    {
+        return CoffeeCountInt * coffeeMultiplierGainPerCoffee * coffeeMultiplier + 1f;
     }
 
     private void ProduceCoffee()
     {
         // Euler integration: value += rate * deltaTime
-        float produced = coffeeBaseRate * coffeeMultiplier * Time.deltaTime;
+        if (!coffeeUnlocked) return;
+        float produced = coffeeProductionRate * coffeeProductionMultiplier * Time.deltaTime;
         coffeeCount += produced;
 
-        if (produced > 0f && coffeeMultiplierGainPerCoffee > 0f)
-        {
-            coffeeMultiplier += produced * coffeeMultiplierGainPerCoffee;
-        }
     }
 
     private void UpdateUI()
@@ -125,12 +154,30 @@ public class GameManager : MonoBehaviour
 
         if (coffeeCountText != null)
         {
-            coffeeCountText.text = Mathf.FloorToInt(coffeeCount).ToString();
+            coffeeCountText.text = CoffeeCountInt.ToString();
         }
 
         if (coffeeMultiplierText != null)
         {
-            coffeeMultiplierText.text = coffeeMultiplier.ToString("F2") + "x";
+            coffeeMultiplierText.text = GetCoffeeMultiplierGain().ToString("F2") + "x";
+        }
+
+        if (coffeeProductionText != null)
+        {
+            float coffeePerSecond = coffeeUnlocked
+                ? coffeeProductionRate * coffeeProductionMultiplier
+                : 0f;
+            coffeeProductionText.text = coffeePerSecond.ToString("F2") + "/s";
+        }
+
+        if (coffeeMultiplierUpgradeCostText != null)
+        {
+            coffeeMultiplierUpgradeCostText.text = coffeeMultiplierUpgradeCost.ToString();
+        }
+
+        if (coffeeProductionUpgradeCostText != null)
+        {
+            coffeeProductionUpgradeCostText.text = coffeeProductionUpgradeCost.ToString();
         }
 
         if (coffeeUnlockCostText != null)
@@ -186,15 +233,33 @@ public class GameManager : MonoBehaviour
         ResetGame(true);
     }
 
-    public void ApplyRateMultiplier(float multiplier)
+    public void BuyCoffeeMultiplierUpgrade()
     {
-        rateMultiplier *= multiplier;
+        if (!TrySpendCoffee(coffeeMultiplierUpgradeCost)) return;
+
+        coffeeMultiplierGainPerCoffee += 0.01f;
+        coffeeMultiplierUpgradeCost = Mathf.CeilToInt(coffeeMultiplierUpgradeCost * coffeeMultiplierUpgradeCostMultiplier);
+    }
+
+    public void BuyCoffeeProductionUpgrade()
+    {
+        if (!TrySpendCoffee(coffeeProductionUpgradeCost)) return;
+
+        coffeeProductionRate += 0.1f;
+        coffeeProductionUpgradeCost = Mathf.CeilToInt(coffeeProductionUpgradeCost * coffeeProductionUpgradeCostMultiplier);
     }
 
     public void IncreaseCoffeeMultiplierGainPerCoffee(float amount)
     {
         if (amount <= 0f) return;
+        
         coffeeMultiplierGainPerCoffee += amount;
+    }
+
+    public void IncreaseCoffeeProductionPerSecond(float amount)
+    {
+        if (amount <= 0f) return;
+        coffeeProductionRate += amount;
     }
 
     public void TryUnlockCoffee()
@@ -216,6 +281,13 @@ public class GameManager : MonoBehaviour
         return true;
     }
 
+    public bool TrySpendCoffee(int amount)
+    {
+        if (Mathf.FloorToInt(coffeeCount) < amount) return false;
+        coffeeCount -= amount;
+        return true;
+    }
+
     // ---- Save / Load / Idle Progress ----
 
     private void SaveGame()
@@ -228,6 +300,10 @@ public class GameManager : MonoBehaviour
         PlayerPrefs.SetInt("prestigePrice", prestigePrice);
         PlayerPrefs.SetFloat("rateMultiplier", rateMultiplier);
         PlayerPrefs.SetFloat("coffeeMultiplier", coffeeMultiplier);
+        PlayerPrefs.SetFloat("coffeeProductionMultiplier", coffeeProductionMultiplier);
+        PlayerPrefs.SetFloat("coffeeProductionRate", coffeeProductionRate);
+        PlayerPrefs.SetInt("coffeeMultiplierUpgradeCost", coffeeMultiplierUpgradeCost);
+        PlayerPrefs.SetInt("coffeeProductionUpgradeCost", coffeeProductionUpgradeCost);
         PlayerPrefs.SetInt("coffeeUnlocked", coffeeUnlocked ? 1 : 0);
         PlayerPrefs.SetString("lastSaveTime", System.DateTime.UtcNow.ToString("o"));
         PlayerPrefs.Save();
@@ -253,6 +329,10 @@ public class GameManager : MonoBehaviour
         prestigePrice = PlayerPrefs.GetInt("prestigePrice", defaultPrestigePrice);
         rateMultiplier = PlayerPrefs.GetFloat("rateMultiplier", 1f);
         coffeeMultiplier = PlayerPrefs.GetFloat("coffeeMultiplier", 1f);
+        coffeeProductionMultiplier = PlayerPrefs.GetFloat("coffeeProductionMultiplier", 1f);
+        coffeeProductionRate = PlayerPrefs.GetFloat("coffeeProductionRate", defaultCoffeeProductionRate);
+        coffeeMultiplierUpgradeCost = PlayerPrefs.GetInt("coffeeMultiplierUpgradeCost", defaultCoffeeMultiplierUpgradeCost);
+        coffeeProductionUpgradeCost = PlayerPrefs.GetInt("coffeeProductionUpgradeCost", defaultCoffeeProductionUpgradeCost);
         coffeeUnlocked = PlayerPrefs.GetInt("coffeeUnlocked", 0) == 1;
 
         // Idle Progress: one Euler step for time away
@@ -265,9 +345,8 @@ public class GameManager : MonoBehaviour
             float donutRate = oompaLoompaCount * baseProductionRate * rateMultiplier * coffeeMultiplier;
             donutCount += donutRate * secondsAway;
 
-            float coffeeProduced = coffeeBaseRate * coffeeMultiplier * secondsAway;
+            float coffeeProduced = coffeeProductionRate * coffeeProductionMultiplier * secondsAway;
             coffeeCount += coffeeProduced;
-            coffeeMultiplier += coffeeProduced * coffeeMultiplierGainPerCoffee;
         }
     }
 
@@ -313,6 +392,10 @@ public class GameManager : MonoBehaviour
         prestigePrice = defaultPrestigePrice;
         rateMultiplier = 1f;
         coffeeMultiplier = 1f;
+        coffeeProductionMultiplier = 1f;
+        coffeeProductionRate = defaultCoffeeProductionRate;
+        coffeeMultiplierUpgradeCost = defaultCoffeeMultiplierUpgradeCost;
+        coffeeProductionUpgradeCost = defaultCoffeeProductionUpgradeCost;
         coffeeUnlocked = false;
         prestigeStars = savedPrestigeStars;
 

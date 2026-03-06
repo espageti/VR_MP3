@@ -67,5 +67,5 @@
         "*.sln": "*.csproj",
         "*.slnx": "*.csproj"
     },
-    "dotnet.defaultSolution": "MP2.slnx"
+    "dotnet.defaultSolution": "VR_MP2.slnx"
 }
