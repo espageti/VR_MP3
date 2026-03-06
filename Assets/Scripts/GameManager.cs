@@ -30,29 +30,44 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TMP_Text oompaCostText;
     [SerializeField] private int oompaLoompaCount = 1;
     [SerializeField] private int oompaLoompaPrice = 3;
-    [SerializeField] private float oompaLoompaPriceMultiplier = 1.1f;
+    [SerializeField] private float oompaLoompaPriceMultiplier = 10f;
     [SerializeField] private float baseProductionRate = 1f;
+
+    [Header("Prestige Settings")]
+    [SerializeField] private TMP_Text prestigeCountText;
+    [SerializeField] private int prestigePrice = 3000;
 
     [Header("Power-ups")]
     [SerializeField] private float rateMultiplier = 1f;
     [SerializeField] private float coffeeMultiplier = 1f;
 
     private float donutCount;
+    private string prestigeStars = "";
+    private int defaultPrestigePrice;
 
     public int DonutCountInt => Mathf.FloorToInt(donutCount);
     public int CoffeeCountInt => Mathf.FloorToInt(coffeeCount);
     public int IceCreamCountInt => CoffeeCountInt;
     public int OompaLoompaCount => oompaLoompaCount;
     public int OompaLoompaPrice => oompaLoompaPrice;
+    public int PrestigeCount => prestigeStars.Length;
+    public int PrestigePrice => prestigePrice;
     public float RateMultiplier => rateMultiplier;
     public float CoffeeMultiplier => coffeeMultiplier;
     public bool CoffeeUnlocked => coffeeUnlocked;
 
     private void Awake()
     {
+        defaultPrestigePrice = prestigePrice;
+
         if (oompaLoompaCount <= 0)
         {
             oompaLoompaCount = 1;
+        }
+
+        if (prestigePrice <= 0)
+        {
+            prestigePrice = 1;
         }
     }
 
@@ -132,6 +147,11 @@ public class GameManager : MonoBehaviour
         {
             oompaCostText.text = oompaLoompaPrice.ToString();
         }
+
+        if (prestigeCountText != null)
+        {
+            prestigeCountText.text = $"Prestige (Cost {prestigePrice:N0}): {prestigeStars}";
+        }
     }
 
     public void SpawnDonut()
@@ -156,6 +176,14 @@ public class GameManager : MonoBehaviour
         donutCount -= oompaLoompaPrice;
         oompaLoompaCount += 1;
         oompaLoompaPrice = Mathf.CeilToInt(oompaLoompaPrice * oompaLoompaPriceMultiplier);
+    }
+
+    public void BuyPrestige()
+    {
+        if (Mathf.FloorToInt(donutCount) < prestigePrice) return;
+
+        prestigeStars += "*";
+        ResetGame(true);
     }
 
     public void ApplyRateMultiplier(float multiplier)
@@ -196,6 +224,8 @@ public class GameManager : MonoBehaviour
         PlayerPrefs.SetFloat("coffeeCount", coffeeCount);
         PlayerPrefs.SetInt("oompaLoompaCount", oompaLoompaCount);
         PlayerPrefs.SetInt("oompaLoompaPrice", oompaLoompaPrice);
+        PlayerPrefs.SetString("prestigeStars", prestigeStars);
+        PlayerPrefs.SetInt("prestigePrice", prestigePrice);
         PlayerPrefs.SetFloat("rateMultiplier", rateMultiplier);
         PlayerPrefs.SetFloat("coffeeMultiplier", coffeeMultiplier);
         PlayerPrefs.SetInt("coffeeUnlocked", coffeeUnlocked ? 1 : 0);
@@ -211,6 +241,16 @@ public class GameManager : MonoBehaviour
         coffeeCount = PlayerPrefs.GetFloat("coffeeCount", PlayerPrefs.GetFloat("iceCreamCount", 0f));
         oompaLoompaCount = PlayerPrefs.GetInt("oompaLoompaCount", 1);
         oompaLoompaPrice = PlayerPrefs.GetInt("oompaLoompaPrice", 3);
+        prestigeStars = PlayerPrefs.GetString("prestigeStars", "");
+        if (string.IsNullOrEmpty(prestigeStars))
+        {
+            int legacyPrestigeCount = PlayerPrefs.GetInt("prestigeCount", 0);
+            if (legacyPrestigeCount > 0)
+            {
+                prestigeStars = new string('*', legacyPrestigeCount);
+            }
+        }
+        prestigePrice = PlayerPrefs.GetInt("prestigePrice", defaultPrestigePrice);
         rateMultiplier = PlayerPrefs.GetFloat("rateMultiplier", 1f);
         coffeeMultiplier = PlayerPrefs.GetFloat("coffeeMultiplier", 1f);
         coffeeUnlocked = PlayerPrefs.GetInt("coffeeUnlocked", 0) == 1;
@@ -259,16 +299,25 @@ public class GameManager : MonoBehaviour
 
     public void ResetGame()
     {
-        PlayerPrefs.DeleteAll();
-        PlayerPrefs.Save();
+        ResetGame(false);
+    }
+
+    private void ResetGame(bool preservePrestigeStars)
+    {
+        string savedPrestigeStars = preservePrestigeStars ? prestigeStars : "";
 
         donutCount = 0f;
         coffeeCount = 0f;
         oompaLoompaCount = 1;
         oompaLoompaPrice = 3;
+        prestigePrice = defaultPrestigePrice;
         rateMultiplier = 1f;
         coffeeMultiplier = 1f;
         coffeeUnlocked = false;
+        prestigeStars = savedPrestigeStars;
+
+        PlayerPrefs.DeleteAll();
+        SaveGame();
 
         ApplyCoffeePanelStateInstant();
     }
