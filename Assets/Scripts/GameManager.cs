@@ -1,5 +1,7 @@
 using UnityEngine;
+using UnityEngine.XR;
 using TMPro;
+using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
@@ -217,6 +219,36 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    private void PlaySound(AudioClip clip)
+    {
+        if (audioSource != null && clip != null)
+        {
+            audioSource.PlayOneShot(clip);
+        }
+    }
+
+    private void SendHapticPulse()
+    {
+        List<InputDevice> devices = new List<InputDevice>();
+        InputDevices.GetDevicesWithCharacteristics(InputDeviceCharacteristics.Controller, devices);
+        foreach (InputDevice device in devices)
+        {
+            HapticCapabilities capabilities;
+            if (device.TryGetHapticCapabilities(out capabilities) && capabilities.supportsImpulse)
+            {
+                device.SendHapticImpulse(0, hapticIntensity, hapticDuration);
+            }
+        }
+    }
+
+    private void PlayParticles(ParticleSystem particles, int count)
+    {
+        if (particles != null)
+        {
+            particles.Emit(count);
+        }
+    }
+
     public void SpawnDonut()
     {
         // if (donutPrefab == null)
@@ -230,6 +262,9 @@ public class GameManager : MonoBehaviour
 
         // GameObject donut = Instantiate(donutPrefab, spawnPosition, spawnRotation);
         donutCount += 1;
+        PlaySound(spawnDonutSound);
+        SendHapticPulse();
+        PlayParticles(spawnDonutParticles, 1);
     }
 
     public void BuyOompaLoompa()
@@ -240,6 +275,9 @@ public class GameManager : MonoBehaviour
         oompaLoompaCount += 1;
         SpawnOompaLoompa();
         oompaLoompaPrice = Mathf.CeilToInt(oompaLoompaPrice * oompaLoompaPriceMultiplier);
+        PlaySound(buyOompaLoompaSound);
+        SendHapticPulse();
+        PlayParticles(buyOompaLoompaParticles, 1);
     }
 
     private void SpawnOompaLoompa()
@@ -266,6 +304,9 @@ public class GameManager : MonoBehaviour
         if (Mathf.FloorToInt(donutCount) < prestigePrice) return;
 
         prestigeStars += "*";
+        PlaySound(buyPrestigeSound);
+        SendHapticPulse();
+        PlayParticles(buyPrestigeParticles, 10);
         ResetGame(true);
     }
 
@@ -275,6 +316,9 @@ public class GameManager : MonoBehaviour
 
         coffeeMultiplierGainPerCoffee += 0.01f;
         coffeeMultiplierUpgradeCost = Mathf.CeilToInt(coffeeMultiplierUpgradeCost * coffeeMultiplierUpgradeCostMultiplier);
+        PlaySound(buyCoffeeMultiplierUpgradeSound);
+        SendHapticPulse();
+        PlayParticles(buyCoffeeMultiplierUpgradeParticles, 3);
     }
 
     public void BuyCoffeeProductionUpgrade()
@@ -283,6 +327,9 @@ public class GameManager : MonoBehaviour
 
         coffeeProductionRate += 0.1f;
         coffeeProductionUpgradeCost = Mathf.CeilToInt(coffeeProductionUpgradeCost * coffeeProductionUpgradeCostMultiplier);
+        PlaySound(buyCoffeeProductionUpgradeSound);
+        SendHapticPulse();
+        PlayParticles(buyCoffeeProductionUpgradeParticles, 3);
     }
 
     public void IncreaseCoffeeMultiplierGainPerCoffee(float amount)
@@ -307,6 +354,9 @@ public class GameManager : MonoBehaviour
         
         Debug.Log("Coffee unlocked!");
         coffeeUnlocked = true;
+        PlaySound(unlockCoffeeSound);
+        SendHapticPulse();
+        PlayParticles(unlockCoffeeParticles, 30);
     }
 
 
@@ -418,6 +468,26 @@ public class GameManager : MonoBehaviour
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip panelMoveSound;
     [SerializeField] private AudioClip panelFinishSound;
+
+    [Header("Button Sound Effects")]
+    [SerializeField] private AudioClip spawnDonutSound;
+    [SerializeField] private AudioClip buyOompaLoompaSound;
+    [SerializeField] private AudioClip buyPrestigeSound;
+    [SerializeField] private AudioClip buyCoffeeMultiplierUpgradeSound;
+    [SerializeField] private AudioClip buyCoffeeProductionUpgradeSound;
+    [SerializeField] private AudioClip unlockCoffeeSound;
+
+    [Header("Haptic Feedback")]
+    [SerializeField] private float hapticIntensity = 0.3f;
+    [SerializeField] private float hapticDuration = 0.1f;
+
+    [Header("Button Particle Effects")]
+    [SerializeField] private ParticleSystem spawnDonutParticles;
+    [SerializeField] private ParticleSystem buyOompaLoompaParticles;
+    [SerializeField] private ParticleSystem buyPrestigeParticles;
+    [SerializeField] private ParticleSystem buyCoffeeMultiplierUpgradeParticles;
+    [SerializeField] private ParticleSystem buyCoffeeProductionUpgradeParticles;
+    [SerializeField] private ParticleSystem unlockCoffeeParticles;
 
     private bool wasUnlockedLastFrame;
     private bool isMoving;
