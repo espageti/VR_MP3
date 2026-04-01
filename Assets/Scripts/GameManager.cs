@@ -40,6 +40,8 @@ public class GameManager : MonoBehaviour
     [Header("Oompa Loompa Settings")]
     [SerializeField] private TMP_Text oompaCountText;
     [SerializeField] private TMP_Text oompaCostText;
+    [SerializeField] private GameObject oompaLoompaPrefab;
+    [SerializeField] private Transform oompaLoompaSpawnRoot;
     [SerializeField] private int oompaLoompaCount = 1;
     [SerializeField] private int oompaLoompaPrice = 3;
     [SerializeField] private float oompaLoompaPriceMultiplier = 10f;
@@ -102,7 +104,12 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        LoadGame();
+        bool loadedGame = LoadGame();
+
+        if (loadedGame)
+        {
+            SpawnMissingLoadedOompaLoompas();
+        }
 
         ApplyCoffeePanelStateInstant();
     }
@@ -231,7 +238,27 @@ public class GameManager : MonoBehaviour
 
         donutCount -= oompaLoompaPrice;
         oompaLoompaCount += 1;
+        SpawnOompaLoompa();
         oompaLoompaPrice = Mathf.CeilToInt(oompaLoompaPrice * oompaLoompaPriceMultiplier);
+    }
+
+    private void SpawnOompaLoompa()
+    {
+        if (oompaLoompaPrefab == null)
+        {
+            Debug.LogWarning("GameManager: Oompa Loompa prefab is not assigned.", this);
+            return;
+        }
+
+        Vector3 spawnPosition = oompaLoompaSpawnRoot != null
+            ? oompaLoompaSpawnRoot.position
+            : transform.position;
+
+        Quaternion spawnRotation = oompaLoompaSpawnRoot != null
+            ? oompaLoompaSpawnRoot.rotation
+            : Quaternion.identity;
+
+        Instantiate(oompaLoompaPrefab, spawnPosition, spawnRotation);
     }
 
     public void BuyPrestige()
@@ -318,9 +345,9 @@ public class GameManager : MonoBehaviour
         PlayerPrefs.Save();
     }
 
-    private void LoadGame()
+    private bool LoadGame()
     {
-        if (!PlayerPrefs.HasKey("lastSaveTime")) return;
+        if (!PlayerPrefs.HasKey("lastSaveTime")) return false;
 
         donutCount = PlayerPrefs.GetFloat("donutCount", 0f);
         coffeeCount = PlayerPrefs.GetFloat("coffeeCount", PlayerPrefs.GetFloat("iceCreamCount", 0f));
@@ -356,6 +383,25 @@ public class GameManager : MonoBehaviour
 
             float coffeeProduced = coffeeProductionRate * coffeeProductionMultiplier * secondsAway;
             coffeeCount += coffeeProduced;
+        }
+
+        return true;
+    }
+
+    private void SpawnMissingLoadedOompaLoompas()
+    {
+        if (oompaLoompaPrefab == null)
+        {
+            Debug.LogWarning("GameManager: Oompa Loompa prefab is not assigned.", this);
+            return;
+        }
+
+        int existingOompas = FindObjectsOfType<OompaLoompa>().Length;
+        int oompasToSpawn = Mathf.Max(0, oompaLoompaCount - existingOompas);
+
+        for (int i = 0; i < oompasToSpawn; i++)
+        {
+            SpawnOompaLoompa();
         }
     }
 
