@@ -32,7 +32,9 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int coffeeUnlockCost = 100;
     [SerializeField] private Vector3 coffeePanelHiddenLocalPosition = new Vector3(0f, -3f, 0f);
     [SerializeField] private Vector3 coffeePanelShownLocalPosition = Vector3.zero;
-    [SerializeField] private float coffeePanelRaiseSpeed = 3f;
+    [SerializeField] private float coffeePanelRaiseSpeed = 1f;
+    [SerializeField] private float coffeePanelMoveDuration = 1f;
+    [SerializeField] private float coffeePanelOvershootDistance = 0.4f;
     private bool coffeeUnlocked;
 
     [Header("Oompa Loompa Settings")]
@@ -366,21 +368,113 @@ public class GameManager : MonoBehaviour
         panelTransform.localPosition = coffeeUnlocked ? coffeePanelShownLocalPosition : coffeePanelHiddenLocalPosition;
     }
 
+    [Header("Coffee Panel Sound Effects")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip panelMoveSound;
+    [SerializeField] private AudioClip panelFinishSound;
+
+    private bool wasUnlockedLastFrame;
+    private bool isMoving;
+    private Vector3 panelMoveStartPosition;
+    private Vector3 panelMoveTargetPosition;
+    private Vector3 panelMoveOvershootPosition;
+    private float panelMoveElapsed;
+    private bool panelMoveSettling;
+
     private void UpdateCoffeePanelAnimation()
     {
         if (coffeePanel == null) return;
 
         coffeePanel.SetActive(true);
+
         Transform panelTransform = coffeePanel.transform;
         Vector3 target = coffeeUnlocked ? coffeePanelShownLocalPosition : coffeePanelHiddenLocalPosition;
 
-        panelTransform.localPosition = Vector3.MoveTowards(
-            panelTransform.localPosition,
-            target,
-            coffeePanelRaiseSpeed * Time.deltaTime
-        );
+        // Detect movement start (state change)
+        if (coffeeUnlocked != wasUnlockedLastFrame)
+        {
+            if (audioSource != null && panelMoveSound != null)
+            {
+                audioSource.PlayOneShot(panelMoveSound);
+            }
+
+            wasUnlockedLastFrame = coffeeUnlocked;
+            isMoving = true;
+
+            panelMoveStartPosition = panelTransform.localPosition;
+            panelMoveTargetPosition = target;
+            panelMoveElapsed = 0f;
+            panelMoveSettling = false;
+
+            Vector3 moveDirection = panelMoveTargetPosition - panelMoveStartPosition;
+            if (moveDirection.sqrMagnitude > 0.000001f)
+            {
+                moveDirection.Normalize();
+                panelMoveOvershootPosition = panelMoveTargetPosition + (moveDirection * coffeePanelOvershootDistance);
+            }
+            else
+            {
+                panelMoveOvershootPosition = panelMoveTargetPosition;
+            }
+        }
+
+        if (isMoving)
+        {
+            float duration = Mathf.Max(0.01f, coffeePanelMoveDuration / Mathf.Max(0.01f, coffeePanelRaiseSpeed));
+            panelMoveElapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(panelMoveElapsed / duration);
+
+            if (!panelMoveSettling)
+            {
+                float easedOut = EaseOutCubic(t);
+                panelTransform.localPosition = Vector3.LerpUnclamped(panelMoveStartPosition, panelMoveOvershootPosition, easedOut);
+
+                if (t >= 1f)
+                {
+                    panelMoveSettling = true;
+                    panelMoveStartPosition = panelTransform.localPosition;
+                    panelMoveElapsed = 0f;
+                }
+            }
+            else
+            {
+                float easedInOut = EaseInOutCubic(t);
+                panelTransform.localPosition = Vector3.LerpUnclamped(panelMoveStartPosition, panelMoveTargetPosition, easedInOut);
+
+                if (t >= 1f)
+                {
+                    panelTransform.localPosition = panelMoveTargetPosition;
+                    isMoving = false;
+
+                    if (audioSource != null && panelFinishSound != null)
+                    {
+                        audioSource.PlayOneShot(panelFinishSound);
+                    }
+                }
+            }
+        }
+        else
+        {
+            panelTransform.localPosition = target;
+        }
     }
 
+    private static float EaseOutCubic(float t)
+    {
+        float inverse = 1f - t;
+        return 1f - (inverse * inverse * inverse);
+    }
+
+    private static float EaseInOutCubic(float t)
+    {
+        if (t < 0.5f)
+        {
+            return 4f * t * t * t;
+        }
+
+        float adjusted = -2f * t + 2f;
+        return 1f - ((adjusted * adjusted * adjusted) / 2f);
+    }
     // ---- Reset ----
 
     public void ResetGame()
