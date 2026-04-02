@@ -1,10 +1,13 @@
 using UnityEngine;
 using UnityEngine.XR;
 using TMPro;
+using System;
 using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
+    public static event Action BuyActionTriggered;
+
     [Header("Donut Settings")]
     [SerializeField] private GameObject donutPrefab;
     [SerializeField] private Transform donutSpawnPoint;
@@ -44,6 +47,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TMP_Text oompaCostText;
     [SerializeField] private GameObject oompaLoompaPrefab;
     [SerializeField] private Transform oompaLoompaSpawnRoot;
+    [SerializeField] private Transform resetStarterOompaSpawnPoint;
     [SerializeField] private int oompaLoompaCount = 1;
     [SerializeField] private int oompaLoompaPrice = 3;
     [SerializeField] private float oompaLoompaPriceMultiplier = 10f;
@@ -192,7 +196,7 @@ public class GameManager : MonoBehaviour
         {
             coffeeMultiplierUpgradeCostText.text = coffeeMultiplierUpgradeCost.ToString();
         }
-
+    
         if (coffeeProductionUpgradeCostText != null)
         {
             coffeeProductionUpgradeCostText.text = coffeeProductionUpgradeCost.ToString();
@@ -221,6 +225,7 @@ public class GameManager : MonoBehaviour
 
     private void PlaySound(AudioClip clip)
     {
+        Debug.Log("Playing sound: " + (clip != null ? clip.name : "null"));
         if (audioSource != null && clip != null)
         {
             audioSource.PlayOneShot(clip);
@@ -247,6 +252,11 @@ public class GameManager : MonoBehaviour
         {
             particles.Emit(count);
         }
+    }
+
+    private void BroadcastBuyActionSignal()
+    {
+        BuyActionTriggered?.Invoke();
     }
 
     public void SpawnDonut()
@@ -278,6 +288,7 @@ public class GameManager : MonoBehaviour
         PlaySound(buyOompaLoompaSound);
         SendHapticPulse();
         PlayParticles(buyOompaLoompaParticles, 1);
+        BroadcastBuyActionSignal();
     }
 
     private void SpawnOompaLoompa()
@@ -296,6 +307,42 @@ public class GameManager : MonoBehaviour
             ? oompaLoompaSpawnRoot.rotation
             : Quaternion.identity;
 
+        GameObject newOompaGameObject = Instantiate(oompaLoompaPrefab, spawnPosition, spawnRotation);
+        OompaLoompa newOompa = newOompaGameObject.GetComponent<OompaLoompa>();
+        
+        if (newOompa != null)
+        {
+            newOompa.PlaceAtRandomSpawnPoint();
+        }
+    }
+
+    private void SpawnResetStarterOompa()
+    {
+        if (oompaLoompaPrefab == null)
+        {
+            Debug.LogWarning("GameManager: Oompa Loompa prefab is not assigned.", this);
+            return;
+        }
+
+        Vector3 spawnPosition;
+        Quaternion spawnRotation;
+
+        if (resetStarterOompaSpawnPoint != null)
+        {
+            spawnPosition = resetStarterOompaSpawnPoint.position;
+            spawnRotation = resetStarterOompaSpawnPoint.rotation;
+        }
+        else if (oompaLoompaSpawnRoot != null)
+        {
+            spawnPosition = oompaLoompaSpawnRoot.position;
+            spawnRotation = oompaLoompaSpawnRoot.rotation;
+        }
+        else
+        {
+            spawnPosition = transform.position;
+            spawnRotation = Quaternion.identity;
+        }
+
         Instantiate(oompaLoompaPrefab, spawnPosition, spawnRotation);
     }
 
@@ -307,6 +354,7 @@ public class GameManager : MonoBehaviour
         PlaySound(buyPrestigeSound);
         SendHapticPulse();
         PlayParticles(buyPrestigeParticles, 10);
+        BroadcastBuyActionSignal();
         ResetGame(true);
     }
 
@@ -319,6 +367,7 @@ public class GameManager : MonoBehaviour
         PlaySound(buyCoffeeMultiplierUpgradeSound);
         SendHapticPulse();
         PlayParticles(buyCoffeeMultiplierUpgradeParticles, 3);
+        BroadcastBuyActionSignal();
     }
 
     public void BuyCoffeeProductionUpgrade()
@@ -330,6 +379,7 @@ public class GameManager : MonoBehaviour
         PlaySound(buyCoffeeProductionUpgradeSound);
         SendHapticPulse();
         PlayParticles(buyCoffeeProductionUpgradeParticles, 3);
+        BroadcastBuyActionSignal();
     }
 
     public void IncreaseCoffeeMultiplierGainPerCoffee(float amount)
@@ -357,6 +407,7 @@ public class GameManager : MonoBehaviour
         PlaySound(unlockCoffeeSound);
         SendHapticPulse();
         PlayParticles(unlockCoffeeParticles, 30);
+        BroadcastBuyActionSignal();
     }
 
 
@@ -447,7 +498,8 @@ public class GameManager : MonoBehaviour
         }
 
         int existingOompas = FindObjectsOfType<OompaLoompa>().Length;
-        int oompasToSpawn = Mathf.Max(0, oompaLoompaCount - existingOompas);
+        int desiredSceneOompas = Mathf.Max(1, oompaLoompaCount);
+        int oompasToSpawn = Mathf.Max(0, desiredSceneOompas - existingOompas);
 
         for (int i = 0; i < oompasToSpawn; i++)
         {
@@ -467,9 +519,10 @@ public class GameManager : MonoBehaviour
 
     private void SpawnCurrentOompaLoompas()
     {
-        if (oompaLoompaCount <= 0) return;
+        int oompasToSpawn = Mathf.Max(0, oompaLoompaCount - 1);
+        if (oompasToSpawn <= 0) return;
 
-        for (int i = 0; i < oompaLoompaCount; i++)
+        for (int i = 0; i < oompasToSpawn; i++)
         {
             SpawnOompaLoompa();
         }
@@ -641,6 +694,7 @@ public class GameManager : MonoBehaviour
         PlayerPrefs.DeleteAll();
         SaveGame();
 
+        SpawnResetStarterOompa();
         SpawnCurrentOompaLoompas();
         ApplyCoffeePanelStateInstant();
     }
