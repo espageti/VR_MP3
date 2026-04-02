@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.XR;
 using TMPro;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
@@ -57,6 +58,11 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TMP_Text prestigeCountText;
     [SerializeField] private int prestigePrice = 3000;
 
+    [Header("Prestige Reset Shake")]
+    [SerializeField] private float prestigeShakeDuration = 1f;
+    [SerializeField] private float prestigeShakeMagnitude = 0.05f;
+    [SerializeField] private float prestigeShakeFrequency = 18f;
+
     [Header("Power-ups")]
     [SerializeField] private float rateMultiplier = 1f;
     [SerializeField] private float coffeeMultiplier = 1f;
@@ -68,6 +74,16 @@ public class GameManager : MonoBehaviour
     private float defaultCoffeeProductionRate;
     private int defaultCoffeeMultiplierUpgradeCost;
     private int defaultCoffeeProductionUpgradeCost;
+    private bool prestigeResetInProgress;
+
+    private sealed class ShakeTarget
+    {
+        public Transform Transform;
+        public Vector3 OriginalPosition;
+        public float SeedX;
+        public float SeedY;
+        public float SeedZ;
+    }
 
     public int DonutCountInt => Mathf.FloorToInt(donutCount);
     public int CoffeeCountInt => Mathf.FloorToInt(coffeeCount);
@@ -348,6 +364,7 @@ public class GameManager : MonoBehaviour
 
     public void BuyPrestige()
     {
+        if (prestigeResetInProgress) return;
         if (Mathf.FloorToInt(donutCount) < prestigePrice) return;
 
         prestigeStars += "*";
@@ -355,7 +372,95 @@ public class GameManager : MonoBehaviour
         SendHapticPulse();
         PlayParticles(buyPrestigeParticles, 10);
         BroadcastBuyActionSignal();
+        StartCoroutine(PrestigeResetSequence());
+    }
+
+    private IEnumerator PrestigeResetSequence()
+    {
+        prestigeResetInProgress = true;
+
+        yield return StartCoroutine(ShakeSceneBeforePrestigeReset());
+
         ResetGame(true);
+        prestigeResetInProgress = false;
+    }
+
+    private IEnumerator ShakeSceneBeforePrestigeReset()
+    {
+        float duration = Mathf.Max(0f, prestigeShakeDuration);
+        float magnitude = Mathf.Max(0f, prestigeShakeMagnitude);
+        float frequency = Mathf.Max(0.01f, prestigeShakeFrequency);
+
+        if (duration <= 0f || magnitude <= 0f)
+        {
+            yield break;
+        }
+
+        Transform[] allTransforms = FindObjectsOfType<Transform>();
+        List<ShakeTarget> targets = new List<ShakeTarget>();
+
+        for (int i = 0; i < allTransforms.Length; i++)
+        {
+            Transform target = allTransforms[i];
+            if (target == null) continue;
+            if (!target.gameObject.activeInHierarchy) continue;
+            if (target.parent != null) continue;
+            if (target == transform) continue;
+            if (IsExcludedFromPrestigeShake(target)) continue;
+            if (target.GetComponentInChildren<Renderer>(true) == null) continue;
+
+            targets.Add(new ShakeTarget
+            {
+                Transform = target,
+                OriginalPosition = target.position,
+                SeedX = UnityEngine.Random.value * 1000f,
+                SeedY = UnityEngine.Random.value * 1000f,
+                SeedZ = UnityEngine.Random.value * 1000f
+            });
+        }
+
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float noiseTime = Time.time * frequency;
+
+            for (int i = 0; i < targets.Count; i++)
+            {
+                ShakeTarget target = targets[i];
+                if (target.Transform == null) continue;
+
+                Vector3 noiseOffset = new Vector3(
+                    Mathf.PerlinNoise(target.SeedX, noiseTime) - 0.5f,
+                    Mathf.PerlinNoise(target.SeedY, noiseTime + 13.37f) - 0.5f,
+                    Mathf.PerlinNoise(target.SeedZ, noiseTime + 26.73f) - 0.5f
+                ) * (2f * magnitude);
+
+                target.Transform.position = target.OriginalPosition + noiseOffset;
+            }
+
+            yield return null;
+        }
+
+        for (int i = 0; i < targets.Count; i++)
+        {
+            ShakeTarget target = targets[i];
+            if (target.Transform == null) continue;
+            target.Transform.position = target.OriginalPosition;
+        }
+    }
+
+    private bool IsExcludedFromPrestigeShake(Transform target)
+    {
+        string lowerName = target.name.ToLowerInvariant();
+        if (lowerName.Contains("floor") || lowerName.Contains("wall") || lowerName.Contains("table"))
+        {
+            return true;
+        }
+
+        string tag = target.tag;
+        return tag == "Floor" || tag == "Wall";
     }
 
     public void BuyCoffeeMultiplierUpgrade()

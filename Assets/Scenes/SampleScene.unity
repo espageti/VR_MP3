@@ -315,7 +315,10 @@ MonoBehaviour:
   oompaLoompaPriceMultiplier: 5
   baseProductionRate: 1
   prestigeCountText: {fileID: 332533647}
-  prestigePrice: 3000
+  prestigePrice: 3
+  prestigeShakeDuration: 0.4
+  prestigeShakeMagnitude: 0.05
+  prestigeShakeFrequency: 18
   rateMultiplier: 1
   coffeeMultiplier: 1
   coffeeProductionMultiplier: 1
@@ -652,7 +655,7 @@ Transform:
   m_GameObject: {fileID: 213513339}
   serializedVersion: 2
   m_LocalRotation: {x: -0.7071068, y: -0, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 17.442, y: 1.069, z: 1.88}
+  m_LocalPosition: {x: 17.615, y: 2.434, z: 1.423}
   m_LocalScale: {x: 0.1, y: 0.10000001, z: 0.10000001}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -5474,7 +5477,7 @@ GameObject:
   - component: {fileID: 229414058}
   - component: {fileID: 229414057}
   m_Layer: 0
-  m_Name: Cube (1)
+  m_Name: Table
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -13535,7 +13538,7 @@ GameObject:
   - component: {fileID: 1290246856}
   - component: {fileID: 1290246860}
   m_Layer: 0
-  m_Name: Plane
+  m_Name: Floor
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -13841,7 +13844,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8135023674665499069, guid: 58d0a4ac86f2348deb02f3880c71378e, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8518324294302271954, guid: 58d0a4ac86f2348deb02f3880c71378e, type: 3}
       propertyPath: m_LocalPosition.x
@@ -13901,7 +13904,7 @@ GameObject:
   - component: {fileID: 1396785905}
   - component: {fileID: 1396785904}
   m_Layer: 0
-  m_Name: Cube
+  m_Name: Table
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -23837,7 +23840,7 @@ Transform:
   m_GameObject: {fileID: 1499170349}
   serializedVersion: 2
   m_LocalRotation: {x: -0.7071068, y: -0, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 17.62493, y: 1.069, z: 2.5268798}
+  m_LocalPosition: {x: 16.814, y: 2.189, z: 3.045}
   m_LocalScale: {x: 0.1, y: 0.10000001, z: 0.10000001}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -29833,7 +29836,7 @@ Transform:
   m_GameObject: {fileID: 1797625760}
   serializedVersion: 2
   m_LocalRotation: {x: -0.7071068, y: -0, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 18.181, y: 1.069, z: 0.991}
+  m_LocalPosition: {x: 17.705, y: 2.467, z: 1.482}
   m_LocalScale: {x: 0.1, y: 0.10000001, z: 0.10000001}
   m_ConstrainProportionsScale: 0
   m_Children: []
