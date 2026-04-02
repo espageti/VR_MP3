@@ -455,6 +455,26 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    private void DespawnAllOompaLoompas()
+    {
+        OompaLoompa[] oompas = FindObjectsOfType<OompaLoompa>();
+
+        for (int i = 0; i < oompas.Length; i++)
+        {
+            Destroy(oompas[i].gameObject);
+        }
+    }
+
+    private void SpawnCurrentOompaLoompas()
+    {
+        if (oompaLoompaCount <= 0) return;
+
+        for (int i = 0; i < oompaLoompaCount; i++)
+        {
+            SpawnOompaLoompa();
+        }
+    }
+
     private void ApplyCoffeePanelStateInstant()
     {
         if (coffeePanel == null) return;
@@ -602,6 +622,8 @@ public class GameManager : MonoBehaviour
     {
         string savedPrestigeStars = preservePrestigeStars ? prestigeStars : "";
 
+        DespawnAllOompaLoompas();
+
         donutCount = 0f;
         coffeeCount = 0f;
         oompaLoompaCount = 1;
@@ -619,6 +641,7 @@ public class GameManager : MonoBehaviour
         PlayerPrefs.DeleteAll();
         SaveGame();
 
+        SpawnCurrentOompaLoompas();
         ApplyCoffeePanelStateInstant();
     }
 }
