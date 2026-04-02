@@ -309,12 +309,16 @@ MonoBehaviour:
   oompaCostText: {fileID: 1071316687}
   oompaLoompaPrefab: {fileID: 4797074569179679988, guid: dea50bbbf11eea64f9938fc1ef5a046e, type: 3}
   oompaLoompaSpawnRoot: {fileID: 0}
+  resetStarterOompaSpawnPoint: {fileID: 1170545823}
   oompaLoompaCount: 1
   oompaLoompaPrice: 3
   oompaLoompaPriceMultiplier: 5
   baseProductionRate: 1
   prestigeCountText: {fileID: 332533647}
   prestigePrice: 3000
+  prestigeShakeDuration: 1
+  prestigeShakeMagnitude: 0.05
+  prestigeShakeFrequency: 18
   rateMultiplier: 1
   coffeeMultiplier: 1
   coffeeProductionMultiplier: 1
@@ -5811,37 +5815,41 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 247611023504238884, guid: dea50bbbf11eea64f9938fc1ef5a046e, type: 3}
+      propertyPath: widenedScaleMultiplier
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 4797074569179679988, guid: dea50bbbf11eea64f9938fc1ef5a046e, type: 3}
       propertyPath: m_Name
       value: OompaLoompa
       objectReference: {fileID: 0}
     - target: {fileID: 5321409001713538638, guid: dea50bbbf11eea64f9938fc1ef5a046e, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -2.91905
+      value: 3.17678
       objectReference: {fileID: 0}
     - target: {fileID: 5321409001713538638, guid: dea50bbbf11eea64f9938fc1ef5a046e, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 39.84262
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5321409001713538638, guid: dea50bbbf11eea64f9938fc1ef5a046e, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 10.17294
+      value: 2.5360081
       objectReference: {fileID: 0}
     - target: {fileID: 5321409001713538638, guid: dea50bbbf11eea64f9938fc1ef5a046e, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 1
+      value: -0.25249797
       objectReference: {fileID: 0}
     - target: {fileID: 5321409001713538638, guid: dea50bbbf11eea64f9938fc1ef5a046e, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 5321409001713538638, guid: dea50bbbf11eea64f9938fc1ef5a046e, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: -0.9675974
       objectReference: {fileID: 0}
     - target: {fileID: 5321409001713538638, guid: dea50bbbf11eea64f9938fc1ef5a046e, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 5321409001713538638, guid: dea50bbbf11eea64f9938fc1ef5a046e, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -5849,7 +5857,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5321409001713538638, guid: dea50bbbf11eea64f9938fc1ef5a046e, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
+      value: -209.251
       objectReference: {fileID: 0}
     - target: {fileID: 5321409001713538638, guid: dea50bbbf11eea64f9938fc1ef5a046e, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
@@ -13516,7 +13524,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TrophyController
   type: 0
-  threshold: 1
+  threshold: 5
   trophyMesh: {fileID: 1690274614}
   trophyText: {fileID: 1601243697}
   unlockParticles: {fileID: 305697943}
@@ -14259,6 +14267,37 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 76f3439a0ae796e4b81bee3f91f888ee, type: 3}
+--- !u!1 &1170545822
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1170545823}
+  m_Layer: 0
+  m_Name: FirstOompaSpawnPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1170545823
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1170545822}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: -0.9675974, z: 0, w: -0.25249797}
+  m_LocalPosition: {x: 3.17678, y: 0, z: 2.5360081}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1290246855
 GameObject:
   m_ObjectHideFlags: 0
@@ -36919,3 +36958,4 @@ SceneRoots:
   - {fileID: 1338630375}
   - {fileID: 436871817}
   - {fileID: 193200032}
+  - {fileID: 1170545823}
